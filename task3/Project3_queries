@@ -1,0 +1,103 @@
+-- DecodeLabs Data Analytics: Project 3 -- SQL Data Analysis
+-- Table: orders (loaded from Dataset_for_Data_Analytics.xlsx)
+
+-- Q1: High-Value Delivered Orders  (SELECT + WHERE + ORDER BY)
+SELECT OrderID, Date, Product, Quantity, TotalPrice, PaymentMethod
+FROM orders
+WHERE OrderStatus = 'Delivered' AND TotalPrice > 2000
+ORDER BY TotalPrice DESC
+LIMIT 10;
+
+-- Q2: Instagram Orders Using a Coupon  (SELECT + WHERE + ORDER BY)
+SELECT OrderID, Date, Product, CouponCode, TotalPrice
+FROM orders
+WHERE ReferralSource = 'Instagram' AND CouponCode IS NOT NULL
+ORDER BY Date ASC
+LIMIT 10;
+
+-- Q3: Revenue and Units Sold by Product  (GROUP BY + COUNT + SUM + AVG)
+SELECT Product,
+       COUNT(*) AS OrderCount,
+       SUM(Quantity) AS UnitsSold,
+       ROUND(SUM(TotalPrice),2) AS TotalRevenue,
+       ROUND(AVG(TotalPrice),2) AS AvgOrderValue
+FROM orders
+GROUP BY Product
+ORDER BY TotalRevenue DESC;
+
+-- Q4: Order Volume and Revenue by Order Status  (GROUP BY + COUNT + SUM + AVG)
+SELECT OrderStatus,
+       COUNT(*) AS NumOrders,
+       ROUND(SUM(TotalPrice),2) AS TotalRevenue,
+       ROUND(AVG(TotalPrice),2) AS AvgOrderValue
+FROM orders
+GROUP BY OrderStatus
+ORDER BY NumOrders DESC;
+
+-- Q5: Top Referral Sources (High Volume)  (GROUP BY + HAVING)
+SELECT ReferralSource,
+       COUNT(*) AS NumOrders,
+       ROUND(SUM(TotalPrice),2) AS TotalRevenue,
+       ROUND(AVG(TotalPrice),2) AS AvgOrderValue
+FROM orders
+GROUP BY ReferralSource
+HAVING COUNT(*) > 200
+ORDER BY TotalRevenue DESC;
+
+-- Q6: Non-Cancelled Revenue by Payment Method  (GROUP BY + WHERE + SUM)
+SELECT PaymentMethod,
+       COUNT(*) AS NumOrders,
+       ROUND(SUM(TotalPrice),2) AS TotalRevenue
+FROM orders
+WHERE OrderStatus != 'Cancelled'
+GROUP BY PaymentMethod
+ORDER BY TotalRevenue DESC;
+
+-- Q7: Monthly Sales Trend  (GROUP BY (Date Function) + SUM)
+SELECT strftime('%Y-%m', Date) AS Month,
+       COUNT(*) AS NumOrders,
+       ROUND(SUM(TotalPrice),2) AS TotalRevenue
+FROM orders
+GROUP BY Month
+ORDER BY Month ASC;
+
+-- Q8: Coupon Effectiveness  (CASE + GROUP BY + AVG)
+SELECT CASE WHEN CouponCode IS NULL THEN 'No Coupon' ELSE CouponCode END AS CouponUsed,
+       COUNT(*) AS NumOrders,
+       ROUND(AVG(TotalPrice),2) AS AvgOrderValue,
+       ROUND(SUM(TotalPrice),2) AS TotalRevenue
+FROM orders
+GROUP BY CouponUsed
+ORDER BY TotalRevenue DESC;
+
+-- Q9: Top 10 Customers by Lifetime Spend  (GROUP BY + SUM + ORDER BY + LIMIT)
+SELECT CustomerID,
+       COUNT(*) AS NumOrders,
+       ROUND(SUM(TotalPrice),2) AS TotalSpend
+FROM orders
+GROUP BY CustomerID
+ORDER BY TotalSpend DESC
+LIMIT 10;
+
+-- Q10: Products With Above-Average Order Value  (GROUP BY + HAVING + Subquery)
+SELECT Product, ROUND(AVG(TotalPrice),2) AS AvgOrderValue
+FROM orders
+GROUP BY Product
+HAVING AVG(TotalPrice) > (SELECT AVG(TotalPrice) FROM orders)
+ORDER BY AvgOrderValue DESC;
+
+-- Q11: Cancellation Rate by Referral Source  (GROUP BY + Conditional Aggregation)
+SELECT ReferralSource,
+       COUNT(*) AS TotalOrders,
+       SUM(CASE WHEN OrderStatus='Cancelled' THEN 1 ELSE 0 END) AS Cancelled,
+       ROUND(100.0 * SUM(CASE WHEN OrderStatus='Cancelled' THEN 1 ELSE 0 END) / COUNT(*), 2) AS CancelRatePct
+FROM orders
+GROUP BY ReferralSource
+ORDER BY CancelRatePct DESC;
+
+-- Q12: Large-Cart Orders That Were Returned (Top 15)  (SELECT + WHERE + ORDER BY)
+SELECT OrderID, Date, CustomerID, Product, ItemsInCart, TotalPrice
+FROM orders
+WHERE OrderStatus = 'Returned' AND ItemsInCart >= 5
+ORDER BY ItemsInCart DESC, TotalPrice DESC
+LIMIT 15;
